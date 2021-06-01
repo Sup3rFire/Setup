@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import logger from "./../logger";
 import { Client } from "tetr.js";
+import { helpMessage } from "./../exports";
 import { curSrv } from "./../index";
 
 module.exports = async function () {
@@ -44,17 +45,7 @@ module.exports = async function () {
 
         switch (command) {
           case "help":
-            author.send(
-              [
-                "Global Commands",
-                "-help - To view all commands",
-                "",
-                "Room Commands",
-                "-save [Setup Name] - Save room setup",
-                "-load (Setup Name / ID) - Load a room setup",
-                "-leave - Makes the bot leave the room",
-              ].join("\n")
-            );
+            author.send(helpMessage);
             break;
 
           default:

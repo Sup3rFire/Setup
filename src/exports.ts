@@ -25,3 +25,13 @@ export const servers = [
   "Youmu",
   "Yuyuko",
 ];
+
+export const helpMessage = [
+  "Global Commands",
+  "-help - To view all commands",
+  "",
+  "Room Commands",
+  "-save [Setup Name] - Save room setup",
+  "-load (Setup Name / ID) - Load a room setup",
+  "-leave - Makes the bot leave the room",
+].join("\n");
