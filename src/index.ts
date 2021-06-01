@@ -5,8 +5,22 @@ import logger from "./logger";
 
 import { servers } from "./exports";
 
+let currentServers: {
+  name: string;
+  pid: number;
+  id: number;
+  hosting: number;
+}[] = [];
+
+export function curSrv(id?: number, hosting?: number) {
+  if (!!id && !!hosting) {
+    let server = currentServers.find((server) => server.id == id);
+    if (!!server) server.hosting += hosting;
+  } else return currentServers;
+}
+
 if (cluster.isMaster) {
-  const currentServers: { name: string; id: number; type: string }[] = [];
+  require("./Master/index")();
 
   const numCPUs = process.env.DEBUG_CPUS || require("os").cpus().length;
   for (let i = 0; i < numCPUs; i++) {
@@ -19,16 +33,17 @@ if (cluster.isMaster) {
         (name) => !currentServers.map((sv) => sv.name).includes(name)
       ) || "Kagari";
 
-    const type = currentServers.find((sv) => sv.type == "Discord")
-      ? "TETR.IO"
-      : "Discord";
-
-    currentServers.push({ name, id: server.process.pid, type });
-    server.send({ command: "setup", name, type });
+    currentServers.push({
+      name,
+      pid: server.process.pid,
+      id: server.id,
+      hosting: 0,
+    });
+    server.send({ command: "setup", name });
   });
 
   cluster.on("exit", async (server) => {
-    const getServer = currentServers.find((sv) => sv.id == server.process.pid);
+    const getServer = currentServers.find((sv) => sv.pid == server.process.pid);
     if (!getServer)
       return logger.info("An unlisted server died, but wasn't listed");
 
@@ -37,38 +52,20 @@ if (cluster.isMaster) {
       1
     );
 
-    logger.info(`${serverDied[0].type} ${serverDied[0].name} died, reviving`);
+    logger.info(`${serverDied[0].name} died, reviving`);
 
     cluster.fork();
   });
 } else {
-  require("mongoose").connect(process.env.MONGO_CONNECTION, {
-    useNewUrlParser: true,
-    useFindAndModify: false,
-    useUnifiedTopology: true,
-  });
-
-  const cachegoose = require("recachegoose");
-  cachegoose(require("mongoose"), {
-    engine: "file",
-  });
-
-  require("mongoose").set("useCreateIndex", true);
-
-  const awaitSetup = async (m: {
-    command: string;
-    name: string;
-    type: string;
-  }) => {
+  const awaitSetup = async (m: { command: string; name: string }) => {
     if (m.command != "setup") return;
 
     const name = m.name;
 
-    logger.info(`${m.type} server ${name} online.`);
+    logger.info(`${name} online`);
 
     process.removeListener("message", awaitSetup);
-
-    require(`./${m.type}/index.js`)(name);
+    require(`./TETR.IO/index`)(name);
   };
 
   process.on("message", awaitSetup);

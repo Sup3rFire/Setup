@@ -28,6 +28,7 @@
     "dotenv": "^10.0.0",
     "mongoose": "^5.12.12",
     "recachegoose": "^8.1.0",
+    "tetr.js": "^1.0.2",
     "winston": "^3.3.3"
   }
 }
