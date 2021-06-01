@@ -2,9 +2,8 @@
   "name": "setup",
   "version": "0.1.0",
   "description": "The bot to load and save room setups!",
-  "main": "dist/index.js",
+  "main": "index.js",
   "scripts": {
-    "build": "tsc",
     "start": "NODE_ENV=PRODUCTION node .",
     "dev": "NODE_ENV=DEVELOPMENT node ."
   },
@@ -18,10 +17,6 @@
     "url": "https://github.com/Sup3rFire/setup/issues"
   },
   "homepage": "https://github.com/Sup3rFire/setup#readme",
-  "devDependencies": {
-    "@types/node": "^15.6.1",
-    "typescript": "^4.3.2"
-  },
   "dependencies": {
     "discord-buttons": "^2.4.1",
     "discord.js": "github:discordjs/discord.js",

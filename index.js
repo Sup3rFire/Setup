@@ -1,23 +1,17 @@
 require("dotenv").config();
 
-import cluster from "cluster";
-import logger from "./logger";
+const cluster = require("cluster");
+const logger = require("./logger");
+const { servers } = require("./exports");
 
-import { servers } from "./exports";
+const currentServers = [];
 
-let currentServers: {
-  name: string;
-  pid: number;
-  id: number;
-  hosting: number;
-}[] = [];
-
-export function curSrv(id?: number, hosting?: number) {
+module.exports.curSrv = (id) => {
   if (!!id && !!hosting) {
-    let server = currentServers.find((server) => server.id == id);
+    const server = currentServers.find((server) => server.id == id);
     if (!!server) server.hosting += hosting;
   } else return currentServers;
-}
+};
 
 if (cluster.isMaster) {
   require("./Master/index")();
@@ -57,7 +51,7 @@ if (cluster.isMaster) {
     cluster.fork();
   });
 } else {
-  const awaitSetup = async (m: { command: string; name: string }) => {
+  const awaitSetup = async (m) => {
     if (m.command != "setup") return;
 
     const name = m.name;

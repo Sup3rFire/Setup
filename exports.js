@@ -1,4 +1,4 @@
-export const servers = [
+module.exports.servers = [
   "Alice",
   "Byakuren",
   "Chen",
