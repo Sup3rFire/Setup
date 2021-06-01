@@ -2,7 +2,7 @@
   "name": "setup",
   "version": "0.1.0",
   "description": "The bot to load and save room setups!",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "start": "NODE_ENV=PRODUCTION node .",
     "dev": "NODE_ENV=DEVELOPMENT node ."
@@ -25,5 +25,9 @@
     "recachegoose": "^8.1.0",
     "tetr.js": "^1.0.2",
     "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^15.6.1",
+    "typescript": "^4.3.2"
   }
 }

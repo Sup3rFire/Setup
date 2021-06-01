@@ -1,4 +1,4 @@
-const winston = require("winston");
+import winston from "winston";
 
 const humanReadable = winston.format.printf(({ level, message, timestamp }) => {
   return `${level} ${process.pid}: ${message}`;
@@ -22,4 +22,4 @@ const logger = winston.createLogger({
   exitOnError: false,
 });
 
-module.exports = logger;
+export = logger;

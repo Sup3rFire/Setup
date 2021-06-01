@@ -1,7 +1,7 @@
-const mongoose = require("mongoose");
-const logger = require("../logger");
-const { Client } = require("tetr.js");
-const { curSrv } = require("../index");
+import mongoose from "mongoose";
+import logger from "./../logger";
+import { Client } from "tetr.js";
+import { curSrv } from "./../index";
 
 module.exports = async function () {
   if (!process.env.MONGO_CONNECTION)
@@ -24,8 +24,10 @@ module.exports = async function () {
     const client = new Client();
 
     client.on("ready", async () => {
-      client.user.on("message", (content, author, system) => {
-        if (system || author.role == "bot") return;
+      if (!client.user) return;
+
+      client.user.on("message", ({ content, author, systemMessage }) => {
+        if (systemMessage || !author || author.role == "bot") return;
 
         if (!content.startsWith("-"))
           return author.send(
@@ -38,7 +40,7 @@ module.exports = async function () {
           );
 
         const args = content.trim().split(" ");
-        const command = args.shift().toLowerCase().slice(1);
+        const command = args.shift()?.toLowerCase().slice(1);
 
         switch (command) {
           case "help":
