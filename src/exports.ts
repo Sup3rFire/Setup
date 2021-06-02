@@ -26,12 +26,5 @@ export const servers = [
   "Yuyuko",
 ];
 
-export const helpMessage = [
-  "Global Commands",
-  "-help - To view all commands",
-  "",
-  "Room Commands",
-  "-save [Setup Name] - Save room setup",
-  "-load (Setup Name / ID) - Load a room setup",
-  "-leave - Makes the bot leave the room",
-].join("\n");
+export const helpMessage =
+  "Hello, I am Setup! The bot to load and save room setups! To view my commands and how to use me, go to https://sf-hub.cc/setup";

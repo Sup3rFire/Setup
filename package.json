@@ -18,12 +18,12 @@
   },
   "homepage": "https://github.com/Sup3rFire/setup#readme",
   "dependencies": {
-    "discord-buttons": "^2.4.1",
+    "discord-buttons": "^3.0.1",
     "discord.js": "github:discordjs/discord.js",
     "dotenv": "^10.0.0",
     "mongoose": "^5.12.12",
     "recachegoose": "^8.1.0",
-    "tetr.js": "^1.0.2",
+    "tetr.js": "^1.0.5",
     "winston": "^3.3.3"
   },
   "devDependencies": {

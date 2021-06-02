@@ -16,6 +16,7 @@ export function curSrv(id?: number, hosting?: number) {
   if (!!id && !!hosting) {
     const server = currentServers.find((server) => server.id == id);
     if (!!server) server.hosting += hosting;
+    return currentServers;
   } else return currentServers;
 }
 
@@ -40,6 +41,18 @@ if (cluster.isMaster) {
       hosting: 0,
     });
     server.send({ command: "setup", name });
+
+    server.on("message", (message: { command: string; data: any }) => {
+      switch (message.command) {
+        case "removeHost":
+          let sv = currentServers.find((sv) => sv.id == server.id);
+          if (sv) sv.hosting -= 1;
+          break;
+
+        default:
+          break;
+      }
+    });
   });
 
   cluster.on("exit", async (server) => {

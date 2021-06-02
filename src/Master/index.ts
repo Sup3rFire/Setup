@@ -3,6 +3,7 @@ import logger from "./../logger";
 import { Client } from "tetr.js";
 import { helpMessage } from "./../exports";
 import { curSrv } from "./../index";
+import cluster from "cluster";
 
 module.exports = async function () {
   if (!process.env.MONGO_CONNECTION)
@@ -25,20 +26,15 @@ module.exports = async function () {
     const client = new Client();
 
     client.on("ready", async () => {
-      if (!client.user) return;
+      logger.info("Master online");
+      if (!client.user) return logger.error("ClientUser doesn't exist");
 
       client.user.on("message", ({ content, author, systemMessage }) => {
+        console.log(author);
+
         if (systemMessage || !author || author.role == "bot") return;
 
-        if (!content.startsWith("-"))
-          return author.send(
-            [
-              "Hello, I am Setup! The bot to load and save room setups!",
-              "",
-              "To view my commands, do -help",
-              "To start using me, invite me to a room",
-            ].join("\n")
-          );
+        if (!content.startsWith("-")) return author.send(helpMessage);
 
         const args = content.trim().split(" ");
         const command = args.shift()?.toLowerCase().slice(1);
@@ -51,6 +47,14 @@ module.exports = async function () {
           default:
             break;
         }
+      });
+
+      client.user.on("invite", ({ author, room }) => {
+        const host = curSrv().sort((s1, s2) => s1.hosting - s2.hosting)[0];
+        cluster.workers[host.id]?.send({
+          command: "newRoom",
+          data: { roomID: room.id, author: author._id },
+        });
       });
     });
 

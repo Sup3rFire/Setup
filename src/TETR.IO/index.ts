@@ -1,5 +1,5 @@
 import logger from "./../logger";
-import { Client } from "tetr.js";
+import { Client, User } from "tetr.js";
 import { helpMessage } from "./../exports";
 
 module.exports = async function () {
@@ -9,7 +9,7 @@ module.exports = async function () {
   process.on("message", (message: { command: string; data: any }) => {
     switch (message.command) {
       case "newRoom":
-        newRoom(message.data.roomID);
+        newRoom(message.data.roomID, message.data.author);
         break;
 
       default:
@@ -17,14 +17,25 @@ module.exports = async function () {
     }
   });
 
-  async function newRoom(roomID: string) {
+  async function newRoom(roomID: string, authorID: string) {
     if (!process.env.TETRIO_TOKEN)
       return logger.error("No TETR.IO token provided.");
 
     const client = new Client();
 
     client.on("ready", async () => {
-      if (!client.user) return logger.error("ClientUser doesn't exist");
+      const author = await client.users?.fetch(authorID);
+      if (!client.user || !author)
+        return logger.error("ClientUser or author doesn't exist");
+
+      let join = false;
+
+      client.on("err", ({ fatal, reason }) => {
+        logger.warn(reason);
+
+        !fatal && client.disconnect();
+        author.send("An error occurred");
+      });
 
       client.user.join(roomID);
 
@@ -32,14 +43,9 @@ module.exports = async function () {
         if (!client.user || !client.user.room)
           return logger.error("ClientUser or Room doesn't exist");
 
-        client.user.room.send(
-          [
-            "Hello, I am Setup! The bot to load and save room setups!",
-            "",
-            "To view my commands, do -help",
-            "To start using me, invite me to a room",
-          ].join("\n")
-        );
+        join = true;
+
+        client.user.room.send(helpMessage);
 
         client.user.room.on("message", ({ content, author, system }) => {
           if (system || !author || author.role == "bot") return;
@@ -51,11 +57,23 @@ module.exports = async function () {
 
           switch (command) {
             case "help":
-              author.send(helpMessage);
+              client.user?.room?.send(helpMessage);
               break;
 
             default:
               break;
+          }
+        });
+
+        client.user.room.on("leave", () => {
+          if (
+            !client.user?.room?.players ||
+            client.user?.room?.players.length < 2
+          ) {
+            if (process.send) process.send({ command: "removeHost" });
+
+            client.user?.leave();
+            client.disconnect();
           }
         });
       });
