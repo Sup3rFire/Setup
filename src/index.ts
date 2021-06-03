@@ -66,6 +66,7 @@ if (cluster.isMaster) {
         clutch: Boolean,
       },
     },
+    name: String,
     owner: String,
   });
 
@@ -108,12 +109,35 @@ if (cluster.isMaster) {
         case "saveSettings":
           Settings.findById(msg.data._id, (err: any, settings: any) => {
             if (err)
-              server.send({ command: "error", data: { id: msg.data.id, err } });
+              return server.send({
+                command: "error",
+                data: { id: msg.data.id, err },
+              });
 
             if (!settings) {
+              Settings.findOne(
+                {
+                  name: msg.data.config.name.toLowerCase(),
+                  owner: msg.data.owner,
+                },
+                (err: any, s: any) => {
+                  if (err)
+                    return server.send({
+                      command: "error",
+                      data: { id: msg.data.id, err },
+                    });
+                  if (!!s)
+                    return server.send({
+                      command: "exists",
+                      data: { id: msg.data.id },
+                    });
+                }
+              );
+
               let setting = new Settings();
               setting.config = msg.data.config;
               setting.owner = msg.data.owner;
+              setting.name = msg.data.config.name.toLowerCase();
 
               setting.save((err: any, room: any) => {
                 server.send({
@@ -131,6 +155,7 @@ if (cluster.isMaster) {
                 msg.data._id,
                 {
                   config: msg.data.config,
+                  name: msg.data.config.meta.name,
                 },
                 (err: any) => {
                   server.send({
@@ -148,12 +173,40 @@ if (cluster.isMaster) {
               data: {
                 id: msg.data.id,
                 err,
-                settings: settings
-                  .map((s) => `${s.config.meta.name} (ID: ${s._id})`)
-                  .join(", "),
+                settings: !!settings
+                  ? settings
+                      .map((s) => `${s.config.meta.name} (ID: ${s._id})`)
+                      .join(", ")
+                  : undefined,
               },
             });
           });
+          break;
+        case "loadSetting":
+          if (mongoose.Types.ObjectId.isValid(msg.data.setting)) {
+            Settings.findById(msg.data.setting, (err: any, setting: any) => {
+              server.send({
+                data: {
+                  id: msg.data.id,
+                  err,
+                  setting,
+                },
+              });
+            });
+          } else {
+            Settings.findOne(
+              { name: msg.data.setting, owner: msg.data.owner },
+              (err: any, setting: any) => {
+                server.send({
+                  data: {
+                    id: msg.data.id,
+                    err,
+                    setting,
+                  },
+                });
+              }
+            );
+          }
           break;
 
         default:

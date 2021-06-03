@@ -91,17 +91,17 @@ module.exports = async function () {
                   if (m.data.id !== id) return;
                   process.removeListener("message", awaitReply);
 
-                  if (m.data.command == "forbidden")
-                    return client.user?.room?.send(
-                      "You aren't allowed to save to this room config"
-                    );
-
                   if (m.data.err) {
                     logger.error(m.data.err);
                     return client.user?.room?.send(
                       "There was an error while trying to save your settings"
                     );
                   }
+
+                  if (m.data.command == "forbidden")
+                    return client.user?.room?.send(
+                      "You aren't allowed to save to this room config"
+                    );
 
                   client.user?.room?.send("Saved your settings");
                 };
@@ -132,6 +132,11 @@ module.exports = async function () {
                     );
                   }
 
+                  if (m.data.command == "exists")
+                    return client.user?.room?.send(
+                      "A config with this name already exists"
+                    );
+
                   client.user?.room?.send("Saved your settings");
 
                   process.removeListener("message", awaitReply);
@@ -141,6 +146,45 @@ module.exports = async function () {
               }
               break;
             case "load":
+              if (!args[0])
+                return client.user?.room?.send(
+                  "Please input a config name or a config id"
+                );
+
+              client.user?.room?.send("Loading this room config...");
+
+              if (process.send && client.user && client.user.room) {
+                const id = nanoid();
+
+                process.send({
+                  command: "loadSetting",
+                  data: {
+                    setting: args[0],
+                    id,
+                    owner: author._id,
+                  },
+                });
+
+                const awaitReply = async (m: {
+                  command: string;
+                  data: any;
+                }) => {
+                  if (m.data.id !== id) return;
+
+                  if (m.data.err) {
+                    logger.error(m.data.err);
+                    return client.user?.room?.send(
+                      "There was an error while trying to find your saved settings"
+                    );
+                  }
+
+                  //TODO: Actually set the config
+
+                  process.removeListener("message", awaitReply);
+                };
+
+                process.on("message", awaitReply);
+              }
               break;
 
             case "list":
