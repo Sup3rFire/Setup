@@ -1,6 +1,7 @@
 require("dotenv").config();
 
-import cluster from "cluster";
+import cluster, { settings } from "cluster";
+import mongoose from "mongoose";
 import logger from "./logger";
 
 import { servers } from "./exports";
@@ -23,6 +24,53 @@ export function curSrv(id?: number, hosting?: number) {
 if (cluster.isMaster) {
   require("./Master/index")();
 
+  const settingsSchema = new mongoose.Schema({
+    config: {
+      meta: {
+        name: String,
+        userlimit: String,
+        allowAnonymous: Boolean,
+        bgm: String,
+        match: { ft: Number, wb: Number },
+      },
+      options: {
+        stock: Number,
+        bagtype: String,
+        spinbonuses: String,
+        allow180: Boolean,
+        kickset: String,
+        allow_harddrop: Boolean,
+        display_next: Boolean,
+        display_hold: Boolean,
+        nextcount: Number,
+        display_shadow: Boolean,
+        are: Number,
+        lineclear_are: Number,
+        room_handling: Boolean,
+        room_handling_arr: Number,
+        room_handling_das: Number,
+        room_handling_sdf: Number,
+        g: Number,
+        gincrease: Number,
+        gmargin: Number,
+        garbagemultiplier: Number,
+        garbagemargin: Number,
+        garbageincrease: Number,
+        locktime: Number,
+        garbagespeed: Number,
+        garbagecap: Number,
+        garbagecapincrease: Number,
+        garbagecapmax: Number,
+        manual_allowed: Boolean,
+        b2bchaining: Boolean,
+        clutch: Boolean,
+      },
+    },
+    owner: String,
+  });
+
+  const Settings = mongoose.model("Settings", settingsSchema);
+
   const numCPUs = process.env.DEBUG_CPUS || require("os").cpus().length;
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
@@ -40,13 +88,72 @@ if (cluster.isMaster) {
       id: server.id,
       hosting: 0,
     });
+
+    if (!process.env.MONGO_CONNECTION)
+      return logger.error("No mongo connection provided.");
+    mongoose.connect(process.env.MONGO_CONNECTION, {
+      useNewUrlParser: true,
+      useFindAndModify: false,
+      useUnifiedTopology: true,
+    });
+
     server.send({ command: "setup", name });
 
-    server.on("message", (message: { command: string; data: any }) => {
-      switch (message.command) {
+    server.on("message", (msg: { command: string; data: any }) => {
+      switch (msg.command) {
         case "removeHost":
           let sv = currentServers.find((sv) => sv.id == server.id);
           if (sv) sv.hosting -= 1;
+          break;
+        case "saveSettings":
+          Settings.findById(msg.data._id, (err: any, settings: any) => {
+            if (err)
+              server.send({ command: "error", data: { id: msg.data.id, err } });
+
+            if (!settings) {
+              let setting = new Settings();
+              setting.config = msg.data.config;
+              setting.owner = msg.data.owner;
+
+              setting.save((err: any, room: any) => {
+                server.send({
+                  command: "newSetting",
+                  data: { id: msg.data.id, err, room },
+                });
+              });
+            } else {
+              if (settings.owner != msg.data.owner)
+                return server.send({
+                  command: "forbidden",
+                  data: { id: msg.data.id },
+                });
+              Settings.findByIdAndUpdate(
+                msg.data._id,
+                {
+                  config: msg.data.config,
+                },
+                (err: any) => {
+                  server.send({
+                    command: "saveSetting",
+                    data: { id: msg.data.id, err },
+                  });
+                }
+              );
+            }
+          });
+          break;
+        case "listSettings":
+          Settings.find({ owner: msg.data.owner }, (err, settings) => {
+            server.send({
+              data: {
+                id: msg.data.id,
+                err,
+                settings: settings
+                  .map((s) => `${s.config.meta.name} (ID: ${s._id})`)
+                  .join(", "),
+              },
+            });
+          });
           break;
 
         default:

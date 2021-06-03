@@ -1,5 +1,6 @@
 import logger from "./../logger";
 import { Client, User } from "tetr.js";
+import { nanoid } from "nanoid";
 import { helpMessage } from "./../exports";
 
 module.exports = async function () {
@@ -33,8 +34,9 @@ module.exports = async function () {
       client.on("err", ({ fatal, reason }) => {
         logger.warn(reason);
 
+        !join && author.send("An error occurred");
+        if (process.send) process.send({ command: "removeHost" });
         !fatal && client.disconnect();
-        author.send("An error occurred");
       });
 
       client.user.join(roomID);
@@ -47,6 +49,8 @@ module.exports = async function () {
 
         client.user.room.send(helpMessage);
 
+        let loaded: false | string = false;
+
         client.user.room.on("message", ({ content, author, system }) => {
           if (system || !author || author.role == "bot") return;
 
@@ -58,6 +62,117 @@ module.exports = async function () {
           switch (command) {
             case "help":
               client.user?.room?.send(helpMessage);
+              break;
+            case "save":
+              if (author.role == "anon")
+                return client.user?.room?.send(
+                  "Please login to save room configs"
+                );
+
+              client.user?.room?.send("Saving your settings...");
+
+              if (!!loaded) {
+                const id = nanoid();
+                if (process.send)
+                  process.send({
+                    command: "saveSettings",
+                    data: {
+                      _id: loaded,
+                      id,
+                      config: client.user?.room?.config,
+                      owner: author._id,
+                    },
+                  });
+
+                const awaitReply = async (m: {
+                  command: string;
+                  data: any;
+                }) => {
+                  if (m.data.id !== id) return;
+                  process.removeListener("message", awaitReply);
+
+                  if (m.data.command == "forbidden")
+                    return client.user?.room?.send(
+                      "You aren't allowed to save to this room config"
+                    );
+
+                  if (m.data.err) {
+                    logger.error(m.data.err);
+                    return client.user?.room?.send(
+                      "There was an error while trying to save your settings"
+                    );
+                  }
+
+                  client.user?.room?.send("Saved your settings");
+                };
+
+                process.on("message", awaitReply);
+              } else {
+                const id = nanoid();
+                if (process.send)
+                  process.send({
+                    command: "saveSettings",
+                    data: {
+                      id,
+                      config: client.user?.room?.config,
+                      owner: author._id,
+                    },
+                  });
+
+                const awaitReply = async (m: {
+                  command: string;
+                  data: any;
+                }) => {
+                  if (m.data.id !== id) return;
+
+                  if (m.data.err) {
+                    logger.error(m.data.err);
+                    return client.user?.room?.send(
+                      "There was an error while trying to save your settings"
+                    );
+                  }
+
+                  client.user?.room?.send("Saved your settings");
+
+                  process.removeListener("message", awaitReply);
+                };
+
+                process.on("message", awaitReply);
+              }
+              break;
+            case "load":
+              break;
+
+            case "list":
+              client.user?.room?.send("Finding your rooms...");
+
+              const id = nanoid();
+
+              if (process.send)
+                process.send({
+                  command: "listSettings",
+                  data: {
+                    id,
+                    owner: author._id,
+                  },
+                });
+
+              const awaitReply = async (m: { command: string; data: any }) => {
+                if (m.data.id !== id) return;
+
+                if (m.data.err) {
+                  logger.error(m.data.err);
+                  return client.user?.room?.send(
+                    "There was an error while trying to find your saved settings"
+                  );
+                }
+
+                client.user?.room?.send(`Your settings are ${m.data.settings}`);
+
+                process.removeListener("message", awaitReply);
+              };
+
+              process.on("message", awaitReply);
               break;
 
             default:
