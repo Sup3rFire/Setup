@@ -151,6 +151,13 @@ module.exports = async function () {
                   "Please input a config name or a config id"
                 );
 
+              if (author._id != client.user?.room?.owner._id)
+                return client.user?.room?.send(
+                  "You must be the owner of the room to load a setting"
+                );
+
+              let roomOwner = author._id;
+
               client.user?.room?.send("Loading this room config...");
 
               if (process.send && client.user && client.user.room) {
@@ -177,8 +184,67 @@ module.exports = async function () {
                       "There was an error while trying to find your saved settings"
                     );
                   }
+                  if (!m.data.setting)
+                    return client.user?.room?.send(
+                      "This room config doesn't exist"
+                    );
 
-                  //TODO: Actually set the config
+                  if (
+                    !client.user?.room?.players.find(
+                      (player) => player.user._id == roomOwner
+                    )
+                  )
+                    return;
+
+                  const configRaw = m.data.setting.config;
+
+                  let config: { index: string; value: any }[] = [];
+                  for (const meta in configRaw.meta) {
+                    if (meta == "match") {
+                      config.push({
+                        index: "meta.match.ft",
+                        value: configRaw.meta.match.ft,
+                      });
+                      config.push({
+                        index: "meta.match.wb",
+                        value: configRaw.meta.match.wb,
+                      });
+                    } else {
+                      config.push({
+                        index: `meta.${meta}`,
+                        value: configRaw.meta[meta],
+                      });
+                    }
+                  }
+                  for (const options in configRaw.options) {
+                    config.push({
+                      index: `game.options.${options}`,
+                      value: configRaw.options[options],
+                    });
+                  }
+
+                  if (client.user.room.owner._id != client.user._id) {
+                    client.user.room.send(
+                      "Please give the bot host to finish loading this config"
+                    );
+
+                    const awaitHost = async (newHost: User) => {
+                      if (newHost._id != client.user?._id) return;
+
+                      client.user.room?.removeListener(
+                        "host_switch",
+                        awaitHost
+                      );
+
+                      client.user.room?.updateConfig(config);
+                      client.user.room?.transferHost(author);
+                    };
+
+                    client.user.room.on("host_switch", awaitHost);
+                  } else {
+                    client.user.room.updateConfig(config);
+                    client.user.room.transferHost(author);
+                  }
 
                   process.removeListener("message", awaitReply);
                 };
@@ -217,6 +283,15 @@ module.exports = async function () {
               };
 
               process.on("message", awaitReply);
+              break;
+
+            case "leave":
+              if (author._id != client.user?.room?.owner._id)
+                return client.user?.room?.send(
+                  "You must be the owner of the room to make the bot leave"
+                );
+              client.user?.leave();
+              client.disconnect();
               break;
 
             default:
