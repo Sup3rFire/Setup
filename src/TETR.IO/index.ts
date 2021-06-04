@@ -98,11 +98,12 @@ module.exports = async function () {
                     );
                   }
 
-                  if (m.data.command == "forbidden")
+                  if (m.command == "forbidden")
                     return client.user?.room?.send(
                       "You aren't allowed to save to this room config"
                     );
 
+                  loaded = m.data.room._id;
                   client.user?.room?.send("Saved your settings");
                 };
 
@@ -132,11 +133,12 @@ module.exports = async function () {
                     );
                   }
 
-                  if (m.data.command == "exists")
+                  if (m.command == "exists")
                     return client.user?.room?.send(
                       "A config with this name already exists"
                     );
 
+                  loaded = m.data.room._id;
                   client.user?.room?.send("Saved your settings");
 
                   process.removeListener("message", awaitReply);
@@ -166,7 +168,7 @@ module.exports = async function () {
                 process.send({
                   command: "loadSetting",
                   data: {
-                    setting: args[0],
+                    setting: args.join(" "),
                     id,
                     owner: author._id,
                   },
@@ -238,12 +240,14 @@ module.exports = async function () {
 
                       client.user.room?.updateConfig(config);
                       client.user.room?.transferHost(author);
+                      loaded = m.data.setting._id;
                     };
 
                     client.user.room.on("host_switch", awaitHost);
                   } else {
                     client.user.room.updateConfig(config);
                     client.user.room.transferHost(author);
+                    loaded = m.data.setting._id;
                   }
 
                   process.removeListener("message", awaitReply);

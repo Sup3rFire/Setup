@@ -117,7 +117,7 @@ if (cluster.isMaster) {
             if (!settings) {
               Settings.findOne(
                 {
-                  name: msg.data.config.name.toLowerCase(),
+                  name: msg.data.config.meta.name.toLowerCase(),
                   owner: msg.data.owner,
                 },
                 (err: any, s: any) => {
@@ -131,20 +131,20 @@ if (cluster.isMaster) {
                       command: "exists",
                       data: { id: msg.data.id },
                     });
+
+                  let setting = new Settings();
+                  setting.config = msg.data.config;
+                  setting.owner = msg.data.owner;
+                  setting.name = msg.data.config.meta.name.toLowerCase();
+
+                  setting.save((err: any, room: any) => {
+                    server.send({
+                      command: "newSetting",
+                      data: { id: msg.data.id, err, room },
+                    });
+                  });
                 }
               );
-
-              let setting = new Settings();
-              setting.config = msg.data.config;
-              setting.owner = msg.data.owner;
-              setting.name = msg.data.config.name.toLowerCase();
-
-              setting.save((err: any, room: any) => {
-                server.send({
-                  command: "newSetting",
-                  data: { id: msg.data.id, err, room },
-                });
-              });
             } else {
               if (settings.owner != msg.data.owner)
                 return server.send({
@@ -155,12 +155,12 @@ if (cluster.isMaster) {
                 msg.data._id,
                 {
                   config: msg.data.config,
-                  name: msg.data.config.meta.name,
+                  name: msg.data.config.meta.name.toLowerCase(),
                 },
-                (err: any) => {
+                (err: any, room: any) => {
                   server.send({
                     command: "saveSetting",
-                    data: { id: msg.data.id, err },
+                    data: { id: msg.data.id, err, room },
                   });
                 }
               );
