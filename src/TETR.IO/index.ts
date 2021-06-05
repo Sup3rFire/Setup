@@ -24,6 +24,8 @@ module.exports = async function () {
 
     const client = new Client();
 
+    const cooldowns = new Map();
+
     client.on("ready", async () => {
       const author = await client.users?.fetch(authorID);
       if (!client.user || !author)
@@ -53,6 +55,24 @@ module.exports = async function () {
 
         client.user.room.on("message", ({ content, author, system }) => {
           if (system || !author || author.role == "bot") return;
+
+          const now = Date.now();
+          const cooldownAmount = 3 * 1000;
+
+          if (cooldowns.has(author._id)) {
+            const expirationTime = cooldowns.get(author._id) + cooldownAmount;
+
+            if (now < expirationTime) {
+              const timeLeft = (expirationTime - now) / 1000;
+              return client.user?.room?.send(
+                `please wait ${timeLeft.toFixed(
+                  1
+                )} more second(s) before using a command.`
+              );
+            }
+          }
+
+          cooldowns.set(author._id, now);
 
           if (!content.startsWith("-")) return;
 
