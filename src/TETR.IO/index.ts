@@ -35,8 +35,11 @@ module.exports = async function () {
             newRoom(newClient, message.data.roomID, message.data.author);
           });
         } else {
-          newRoom(availableClient, message.data.roomID, message.data.author);
-          let setupClient: Client | undefined = new Client();
+          const client = availableClient;
+          availableClient = undefined;
+
+          newRoom(client, message.data.roomID, message.data.author);
+          setupClient = new Client();
           setupClient.login(process.env.TETRIO_TOKEN);
 
           setupClient.once("ready", async () => {
@@ -69,8 +72,10 @@ module.exports = async function () {
       logger.warn(reason);
 
       !join && author.send("An error occurred");
-      if (process.send) process.send({ command: "removeHost" });
-      !fatal && client.disconnect();
+      process.send &&
+        !client.user?.room &&
+        process.send({ command: "removeHost" });
+      !fatal && !client.user?.room && client.disconnect();
     });
 
     client.user.join(roomID);

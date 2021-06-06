@@ -72,7 +72,7 @@ if (cluster.isMaster) {
 
   const Settings = mongoose.model("Settings", settingsSchema);
 
-  const numCPUs = process.env.DEBUG_CPUS || require("os").cpus().length;
+  const numCPUs = require("os").cpus().length;
   for (let i = 0; i < numCPUs; i++) {
     cluster.fork();
   }
