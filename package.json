@@ -18,7 +18,6 @@
   },
   "homepage": "https://github.com/Sup3rFire/setup#readme",
   "dependencies": {
-    "discord-buttons": "^3.0.1",
     "discord.js": "github:discordjs/discord.js",
     "dotenv": "^10.0.0",
     "mongoose": "^5.12.12",
