@@ -8,7 +8,6 @@ import { servers } from "./exports";
 
 let currentServers: {
   name: string;
-  pid: number;
   id: number;
   hosting: number;
 }[] = [];
@@ -85,7 +84,6 @@ if (cluster.isMaster) {
 
     currentServers.push({
       name,
-      pid: server.process.pid,
       id: server.id,
       hosting: 0,
     });
@@ -216,7 +214,7 @@ if (cluster.isMaster) {
   });
 
   cluster.on("exit", async (server) => {
-    const getServer = currentServers.find((sv) => sv.pid == server.process.pid);
+    const getServer = currentServers.find((sv) => sv.id == server.id);
     if (!getServer)
       return logger.info("An unlisted server died, but wasn't listed");
 
