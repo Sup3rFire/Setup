@@ -16,8 +16,8 @@ module.exports = async function () {
       logger.info("Master online");
       if (!client.user) return logger.error("ClientUser doesn't exist");
 
-      client.user.on("message", ({ content, author, systemMessage }) => {
-        if (systemMessage || !author || author.role == "bot") return;
+      client.user.on("message", ({ content, author, system }) => {
+        if (system || !author || author.role == "bot") return;
 
         if (!content.startsWith("-")) return author.send(helpMessage);
 

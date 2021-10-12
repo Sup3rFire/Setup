@@ -23,6 +23,53 @@ export function curSrv(id?: number, hosting?: number) {
 if (cluster.isMaster) {
   require("./Master/index")();
 
+  interface roomSchema {
+    _id: string;
+    config: {
+      meta: {
+        name: string;
+        userlimit: string;
+        allowAnonymous: boolean;
+        bgm: string;
+        match: { ft: number; wb: number };
+      };
+      options: {
+        stock: number;
+        bagtype: string;
+        spinbonuses: string;
+        allow180: boolean;
+        kickset: string;
+        allow_harddrop: boolean;
+        display_next: boolean;
+        display_hold: boolean;
+        nextcount: number;
+        display_shadow: boolean;
+        are: number;
+        lineclear_are: number;
+        room_handling: boolean;
+        room_handling_arr: number;
+        room_handling_das: number;
+        room_handling_sdf: number;
+        g: number;
+        gincrease: number;
+        gmargin: number;
+        garbagemultiplier: number;
+        garbagemargin: number;
+        garbageincrease: number;
+        locktime: number;
+        garbagespeed: number;
+        garbagecap: number;
+        garbagecapincrease: number;
+        garbagecapmax: number;
+        manual_allowed: boolean;
+        b2bchaining: boolean;
+        clutch: boolean;
+      };
+    };
+    name: string;
+    owner: string;
+  }
+
   const settingsSchema = new mongoose.Schema({
     config: {
       meta: {
@@ -69,7 +116,7 @@ if (cluster.isMaster) {
     owner: String,
   });
 
-  const Settings = mongoose.model("Settings", settingsSchema);
+  const Settings = mongoose.model<roomSchema>("Settings", settingsSchema);
 
   const numCPUs = require("os").cpus().length;
   for (let i = 0; i < numCPUs; i++) {
@@ -130,10 +177,11 @@ if (cluster.isMaster) {
                       data: { id: msg.data.id },
                     });
 
-                  let setting = new Settings();
-                  setting.config = msg.data.config;
-                  setting.owner = msg.data.owner;
-                  setting.name = msg.data.config.meta.name.toLowerCase();
+                  let setting = new Settings({
+                    config: msg.data.config,
+                    owner: msg.data.owner,
+                    name: msg.data.config.meta.name.toLowerCase(),
+                  });
 
                   setting.save((err: any, room: any) => {
                     server.send({
