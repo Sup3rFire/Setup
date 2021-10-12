@@ -138,6 +138,7 @@ if (cluster.isMaster) {
     if (!process.env.MONGO_CONNECTION)
       return logger.error("No mongo connection provided.");
     mongoose.connect(process.env.MONGO_CONNECTION, {
+      //@ts-ignore
       useNewUrlParser: true,
       useFindAndModify: false,
       useUnifiedTopology: true,
